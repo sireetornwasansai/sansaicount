@@ -20,13 +20,17 @@
   --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{box-sizing:border-box;margin:0}
-html{scroll-behavior:smooth;scroll-padding-top:76px;background:var(--bg)}
-body{font-family:'Sarabun',sans-serif;font-size:17px;line-height:1.7;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+html{overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:76px;background:var(--bg)}
+body{font-family:'Sarabun',sans-serif;font-size:17px;line-height:1.7;color:var(--text);background:transparent;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 :focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
 .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 /* ---------- พื้นหลังเคลื่อนไหว (canvas) ---------- */
+/* วิดีโอพื้นหลัง (sandalwood_memorial_animated_bg) ทำให้ฟุ้งและมืด ใช้เป็นบรรยากาศ ไม่ให้เห็นเลขตัวอย่างในวิดีโอ */
+#bgv{position:fixed;left:-6%;top:-6%;width:112%;height:112%;object-fit:cover;z-index:-2;pointer-events:none;opacity:.34;filter:blur(24px) brightness(.85) saturate(.9);
+  transform:translate3d(0,var(--vy,0),0) scale(1.04);will-change:transform;animation:vin 2.4s ease both}
+@keyframes vin{from{opacity:0}}
 #bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block}
 main,footer,.goalbar{position:relative}
 
@@ -162,7 +166,7 @@ footer strong{display:block;color:var(--gold-soft);font-size:18px;margin-bottom:
 .js h2.rv:not(.in){transform:translateX(-24px)}
 
 /* ---------- ผู้ดูแลระบบ (dialog) ---------- */
-dialog{border:1px solid rgba(184,155,99,.5);border-radius:18px;padding:0;background:#0f0f11;color:var(--text);width:min(680px,94vw);max-height:92vh;box-shadow:0 30px 100px #000,0 0 60px rgba(184,155,99,.1);overflow:hidden}
+dialog{margin:auto;border:1px solid rgba(184,155,99,.5);border-radius:18px;padding:0;background:#0f0f11;color:var(--text);width:min(680px,94vw);max-height:92vh;box-shadow:0 30px 100px #000,0 0 60px rgba(184,155,99,.1);overflow:hidden}
 dialog[open]{display:flex;flex-direction:column;animation:dlg .45s var(--ease)}
 dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
 @keyframes dlg{from{opacity:0;transform:translateY(24px) scale(.97)}}
@@ -200,16 +204,22 @@ dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);ba
   .stat,.c8,.c4{grid-column:span 12}
   section{padding-top:56px}
   .row2{grid-template-columns:1fr}
+  .js .rv.l:not(.in),.js .rv.r:not(.in),.js h2.rv:not(.in){transform:translateY(30px)}
 }
 @media(prefers-reduced-motion:reduce){
   .cd b.t,.fill::after,.tile i.flip,.poster,dialog[open],.pane.on{animation:none}
   .fill,.pin,.bar,.line-path,.lbl,.dot,.rv,h2::after{transition:none!important}
+  #bgv{display:none}
   html{scroll-behavior:auto}
   .poster{transform:none!important;opacity:1!important}
 }
 </style>
 </head>
 <body>
+<video id="bgv" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1" poster="poster.jpg">
+  <source src="bg.webm" type="video/webm">
+  <source src="bg.mp4" type="video/mp4">
+</video>
 <canvas id="bg" aria-hidden="true"></canvas>
 
 <div class="top" id="top"><div class="wrap">
@@ -386,6 +396,7 @@ function onScrollFrame() {
   const y = scrollY, max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
   $('sp').style.setProperty('--sp', Math.min(1, y / max).toFixed(4));
   $('top').classList.toggle('scrolled', y > 24);
+  if (!reduce) $('bgv').style.setProperty('--vy', (-(y / max) * 5).toFixed(2) + '%');   // วิดีโอพื้นหลังเลื่อนช้ากว่าเนื้อหา
   if (!reduce) $('stage').style.setProperty('--ps', Math.min(1, y / Math.max(1, $('stage').offsetHeight * .9)).toFixed(4));
 }
 addEventListener('scroll', () => { if (!scrollState.ticking) { scrollState.ticking = true; requestAnimationFrame(onScrollFrame); } }, { passive: true });
