@@ -462,6 +462,12 @@ dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);ba
           <button type="submit" id="b-conf">บันทึก</button>
           <p class="msg" id="m-conf" role="status"></p>
         </form>
+        <div class="box">
+          <h3>ตรวจสอบระบบอัปโหลดรูป</h3>
+          <p class="cap">ใช้ตรวจว่า Apps Script ที่ Deploy อยู่เป็นเวอร์ชันล่าสุดและเข้าถึงโฟลเดอร์ไดรฟ์ได้หรือไม่</p>
+          <button type="button" class="ghost sm" id="b-diag">ตรวจสอบ</button>
+          <pre class="msg" id="m-diag" role="status" style="white-space:pre-wrap;margin-top:10px;font:inherit;font-size:15px"></pre>
+        </div>
       </div>
 
       <div class="pane" id="t3">
@@ -997,6 +1003,14 @@ $('lb-x').onclick = () => lb.close(); $('lb-p').onclick = () => showLb(lbI - 1);
 lb.addEventListener('click', e => { if (e.target === lb) lb.close(); });
 lb.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') showLb(lbI - 1); else if (e.key === 'ArrowRight') showLb(lbI + 1); });
 
+$('b-diag').addEventListener('click', async () => {
+  const m = $('m-diag'), b = $('b-diag'); b.disabled = true; m.className = 'msg'; m.textContent = 'กำลังตรวจสอบ…';
+  const j = await api('diag'); b.disabled = false;
+  if (!j.ok) { m.className = 'msg err'; m.textContent = j.error === 'unknown_action' ? 'Apps Script ที่ Deploy อยู่เป็นเวอร์ชันเก่า (ยังไม่ใช่ Code.gs ล่าสุด) — วาง Code.gs ใหม่แล้ว Deploy เป็น New version' : errText(j); return; }
+  const good = j.drive === 'ok';
+  m.className = 'msg ' + (good ? 'ok' : 'err');
+  m.textContent = 'เวอร์ชันสคริปต์: ' + j.version + '\nบัญชีที่รันสคริปต์: ' + (j.user || '—') + '\nโฟลเดอร์รูป: ' + (good ? 'เข้าถึงได้ (' + j.folder + ')' : j.drive);
+});
 $('f-total').addEventListener('submit', async e => {
   e.preventDefault();
   const b = $('b-total'); b.disabled = true; say('m-total', 'กำลังบันทึก…');
