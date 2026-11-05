@@ -816,7 +816,7 @@ async function api(action, payload = {}) {
     return j;
   } catch { return { ok: false, error: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (ถ้าเพิ่งแก้ Code.gs ให้ Deploy เวอร์ชันใหม่ก่อน)' }; }
 }
-const errText = j => ERR[j.error] || j.error || 'เกิดข้อผิดพลาด';
+const errText = j => ERR[j.error] || (/DriveApp|drive\.readonly|authorization/i.test(String(j.error)) ? 'สคริปต์ยังไม่ได้รับสิทธิ์ใช้ Google Drive — ให้ผู้ดูแลรันฟังก์ชัน authorizeDrive ใน Apps Script แล้ว Deploy เวอร์ชันใหม่ (ดู README)' : (j.error || 'เกิดข้อผิดพลาด'));
 
 function showView(loggedIn) {
   $('v-login').style.display = loggedIn ? 'none' : '';
