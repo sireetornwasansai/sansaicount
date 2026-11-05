@@ -430,7 +430,7 @@ dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);ba
           </div>
           <label for="a-note">หมายเหตุ (ไม่บังคับ)</label><input id="a-note" maxlength="200">
           <label for="a-file">รูปกิจกรรม (ไม่บังคับ · สูงสุด 10 รูปต่อวัน)</label>
-          <div class="drop" id="drop"><input id="a-file" type="file" accept="image/jpeg,image/png,image/webp" multiple><strong>ลากรูปมาวางที่นี่ หรือกดเพื่อเลือกไฟล์</strong><small>JPG · PNG · WebP · ระบบย่อรูปและอัปโหลดขึ้นไดรฟ์ของโรงพยาบาลให้อัตโนมัติ</small></div>
+          <div class="drop" id="drop"><input id="a-file" type="file" accept="image/*,.heic,.heif,.avif,.bmp,.gif,.tif,.tiff,.webp" multiple><strong>ลากรูปมาวางที่นี่ หรือกดเพื่อเลือกไฟล์</strong><small>รองรับรูปทุกชนิด (JPG · PNG · WebP · HEIC · GIF ฯลฯ) · ระบบย่อรูปและอัปโหลดขึ้นไดรฟ์ของโรงพยาบาลให้อัตโนมัติ</small></div>
           <div class="thumbs" id="thumbs" aria-live="polite"></div>
           <p class="msg" id="m-file" role="status"></p>
           <div class="linkadd"><input id="a-photo" type="url" placeholder="หรือวางลิงก์รูปที่มีอยู่แล้ว https://…" aria-label="ลิงก์รูป"><button type="button" class="ghost sm" id="b-link">เพิ่มลิงก์</button></div>
@@ -824,7 +824,7 @@ const adm = $('adm');
 adm.token = safe(() => sessionStorage.getItem('adm_tok')) || '';
 const todayTH = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' });
 const say = (id, text, kind) => { const m = $(id); m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); };
-const ERR = { wrong_password: 'รหัสผ่านไม่ถูกต้อง', locked: 'กรอกผิดหลายครั้ง ระบบล็อกชั่วคราว กรุณารอประมาณ 10 นาที', unauthorized: 'หมดเวลาการเข้าสู่ระบบ กรุณาเข้าสู่ระบบอีกครั้ง', bad_date: 'วันที่ไม่ถูกต้อง', bad_count: 'จำนวนไม่ถูกต้อง', bad_photo: 'ลิงก์ภาพต้องขึ้นต้นด้วย http:// หรือ https://', bad_target: 'เป้าหมายไม่ถูกต้อง', bad_deadline: 'กำหนดเวลาไม่ถูกต้อง', bad_total: 'ยอดรวมไม่ถูกต้อง', bad_image: 'รองรับเฉพาะไฟล์ JPG, PNG, WebP', image_too_big: 'ไฟล์ใหญ่เกินไป', too_many_photos: 'รูปเกินจำนวนที่กำหนดต่อวัน', not_in_folder: 'ไฟล์ไม่ได้อยู่ในโฟลเดอร์รูปกิจกรรม', not_found: 'ไม่พบไฟล์', stale: 'ข้อมูลเปลี่ยนไปแล้ว กรุณารีเฟรชรายการ' };
+const ERR = { wrong_password: 'รหัสผ่านไม่ถูกต้อง', locked: 'กรอกผิดหลายครั้ง ระบบล็อกชั่วคราว กรุณารอประมาณ 10 นาที', unauthorized: 'หมดเวลาการเข้าสู่ระบบ กรุณาเข้าสู่ระบบอีกครั้ง', bad_date: 'วันที่ไม่ถูกต้อง', bad_count: 'จำนวนไม่ถูกต้อง', bad_photo: 'ลิงก์ภาพต้องขึ้นต้นด้วย http:// หรือ https://', bad_target: 'เป้าหมายไม่ถูกต้อง', bad_deadline: 'กำหนดเวลาไม่ถูกต้อง', bad_total: 'ยอดรวมไม่ถูกต้อง', bad_image: 'ไฟล์นี้ไม่ใช่รูปภาพที่รองรับ', image_too_big: 'ไฟล์ใหญ่เกินไป (สูงสุด 30 MB)', too_many_photos: 'รูปเกินจำนวนที่กำหนดต่อวัน', not_in_folder: 'ไฟล์ไม่ได้อยู่ในโฟลเดอร์รูปกิจกรรม', not_found: 'ไม่พบไฟล์', stale: 'ข้อมูลเปลี่ยนไปแล้ว กรุณารีเฟรชรายการ' };
 async function api(action, payload = {}) {
   if (!API_URL) return { ok: false, error: 'ยังไม่ได้ตั้งค่า API_URL' };
   try {
@@ -832,7 +832,7 @@ async function api(action, payload = {}) {
     const j = await r.json();
     if (j.error === 'unauthorized') lockOut();
     return j;
-  } catch { return { ok: false, error: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (ถ้าเพิ่งแก้ Code.gs ให้ Deploy เวอร์ชันใหม่ก่อน)' }; }
+  } catch { return { ok: false, net: true, error: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (ถ้าเพิ่งแก้ Code.gs ให้ Deploy เวอร์ชันใหม่ก่อน)' }; }
 }
 const errText = j => ERR[j.error] || (/DriveApp|drive\.readonly|authorization/i.test(String(j.error)) ? 'สคริปต์ยังไม่ได้รับสิทธิ์ใช้ Google Drive — ให้ผู้ดูแลรันฟังก์ชัน authorizeDrive ใน Apps Script แล้ว Deploy เวอร์ชันใหม่ (ดู README)' : (j.error || 'เกิดข้อผิดพลาด'));
 
@@ -905,25 +905,39 @@ function fillAdmin() {
 }
 
 /* ===== อัปโหลดรูป: หลายรูปต่อวัน · ลากวาง · พรีวิว · ลองใหม่ · ลบไฟล์ที่ไม่ใช้ ===== */
-const MAX_PHOTOS = 10, MAX_SRC_MB = 25;
+const MAX_PHOTOS = 30, MAX_SRC_MB = 30;
+const IMG_EXT = /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?|svg)$/i;
+const isImg = f => /^image\//.test(f.type) || IMG_EXT.test(f.name || '');
+const fileB64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('อ่านไฟล์ไม่ได้ (' + f.name + ')')); r.readAsDataURL(f); });
 let pid = 0;
 adm.photos = [];
-function shrink(file) { // ย่อเป็น JPEG ไม่เกิน 1600px
-  return new Promise((res, rej) => {
+function shrink(file) { // ย่อเป็น JPEG ไม่เกิน 1600px — ถ้าเบราว์เซอร์ถอดรหัสรูปไม่ได้ (เช่น HEIC) จะส่งไฟล์ต้นฉบับแทน
+  const raw = async () => {
+    if (file.size > MAX_SRC_MB * 1048576) throw new Error(file.name + ': ใหญ่เกิน ' + MAX_SRC_MB + ' MB');
+    return { data: await fileB64(file), mime: /^image\//.test(file.type) ? file.type : '', name: file.name };
+  };
+  if (/^image\/(gif|svg)/.test(file.type) && file.size <= 8 * 1048576) return raw(); // คงภาพเคลื่อนไหว/เวกเตอร์ไว้
+  return new Promise(res => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
-      const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
-      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .82).split(',')[1]);
+      try {
+        const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+        const out = c.toDataURL('image/jpeg', .82).split(',')[1];
+        URL.revokeObjectURL(url);
+        if (out && out.length > 100) return res({ data: out, mime: 'image/jpeg', name: file.name.replace(/\.\w+$/, '') + '.jpg' });
+      } catch (e) {}
+      URL.revokeObjectURL(url); res(raw());
     };
-    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('อ่านรูปไม่ได้ (' + file.name + ')')); }; img.src = url;
+    img.onerror = () => { URL.revokeObjectURL(url); res(raw()); };
+    img.src = url;
   });
 }
 function renderThumbs() {
   $('thumbs').replaceChildren(...adm.photos.map(p => {
     const f = document.createElement('div'); f.className = 'th ' + p.state;
-    const img = document.createElement('img'); img.alt = 'รูปกิจกรรมที่เลือก'; img.src = p.preview || photoUrl(p.url, 300); f.append(img);
+    const img = document.createElement('img'); img.alt = 'รูปกิจกรรมที่เลือก'; { const u = p.preview || (p.url ? photoUrl(p.url, 300) : ''); if (u) img.src = u; } f.append(img);
     if (p.state === 'up') { const s = document.createElement('div'); s.className = 'st'; s.textContent = 'กำลังอัปโหลด…'; f.append(s); }
     if (p.state === 'err') { const s = document.createElement('button'); s.type = 'button'; s.className = 'st retry'; s.textContent = 'ลองอีกครั้ง'; s.onclick = () => upload(p); f.append(s); }
     const x = document.createElement('button'); x.type = 'button'; x.className = 'rm'; x.textContent = '×'; x.setAttribute('aria-label', 'เอารูปนี้ออก'); x.onclick = () => removePhoto(p); f.append(x);
@@ -934,8 +948,13 @@ function renderThumbs() {
 async function upload(p) {
   p.state = 'up'; renderThumbs();
   try {
-    const data = await shrink(p.file);
-    const j = await api('upload_photo', { mime: 'image/jpeg', data, date: $('a-date').value });
+    const sh = await shrink(p.file);
+    let j;
+    for (let t = 0; t < 3; t++) {   // ลองซ้ำอัตโนมัติสูงสุด 3 ครั้งเมื่อเน็ตหลุด/เซิร์ฟเวอร์ไม่ตอบ
+      j = await api('upload_photo', { mime: sh.mime, name: sh.name, data: sh.data, date: $('a-date').value });
+      if (j.ok || !j.net) break;
+      await new Promise(r => setTimeout(r, 1200 * (t + 1)));
+    }
     if (!j.ok) { p.state = 'err'; say('m-file', errText(j), 'err'); }
     else { p.url = j.url; p.state = 'ok'; p.fresh = true; if (p.removed) api('delete_photo', { url: p.url }); }
   } catch (x) { p.state = 'err'; say('m-file', x.message || 'อัปโหลดไม่สำเร็จ', 'err'); }
@@ -945,9 +964,9 @@ async function addFiles(files) {
   const skipped = [], queue = [];
   for (const f of [...files]) {
     if (adm.photos.length >= MAX_PHOTOS) { skipped.push('เกิน ' + MAX_PHOTOS + ' รูปต่อวัน'); break; }
-    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { skipped.push(f.name + ': รองรับเฉพาะ JPG, PNG, WebP'); continue; }
+    if (!isImg(f)) { skipped.push(f.name + ': ไม่ใช่ไฟล์รูปภาพ'); continue; }
     if (f.size > MAX_SRC_MB * 1048576) { skipped.push(f.name + ': ใหญ่เกิน ' + MAX_SRC_MB + ' MB'); continue; }
-    const p = { id: ++pid, file: f, preview: URL.createObjectURL(f), state: 'up' }; adm.photos.push(p); queue.push(p);
+    const p = { id: ++pid, file: f, preview: /^image\/(jpeg|png|webp|gif|svg)/.test(f.type) ? URL.createObjectURL(f) : '', state: 'up' }; adm.photos.push(p); queue.push(p);
   }
   say('m-file', skipped.join(' · '), skipped.length ? 'err' : '');
   renderThumbs();
