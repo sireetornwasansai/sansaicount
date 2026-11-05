@@ -170,13 +170,31 @@ svg text{font-family:'Sarabun',sans-serif}
 .js .chart:not(.in) .lbl,.js .chart:not(.in) .dot{opacity:0}
 .js .chart:not(.in) .line-path{stroke-dashoffset:1}
 
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-.gallery figure{background:var(--card-solid);border:1px solid var(--line);border-radius:12px;overflow:hidden;transition:transform .5s var(--ease),border-color .4s,box-shadow .4s}
-.gallery figure:hover{transform:translateY(-5px);border-color:rgba(184,155,99,.5);box-shadow:0 16px 40px rgba(0,0,0,.5)}
-.gallery img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#1b1a18;transition:transform .9s var(--ease)}
-.gallery figure:hover img{transform:scale(1.05)}
-.gallery figure{overflow:hidden}
-.gallery figcaption{padding:10px 14px;font-size:15px;color:var(--muted);position:relative;background:var(--card-solid)}
+/* ภาพกิจกรรม: แยกรายวัน (หน้าละไม่เกิน 4 วัน) + แถบรูปเลื่อนอัตโนมัติ */
+.gal-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.gal-top h2{margin-bottom:0}
+.gal-days{display:grid;gap:18px}
+.gday{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 0 8px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.gd-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;padding:0 22px 8px}
+.gd-head h3{margin:0;font-family:var(--serif);font-size:19px;font-weight:700;color:var(--ivory)}
+.gd-head .gd-meta{font-size:15px;color:var(--muted)}
+.gd-head .gd-meta b{color:var(--gold-soft);font-weight:600}
+.gd-note{margin:0;padding:0 22px 4px;font-size:16px;color:var(--text)}
+.gd-strip{--tw:232px;--gap:14px;overflow:hidden;padding:12px 0 14px}
+.gd-strip.run{-webkit-mask:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%);mask:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%)}
+.gd-track{display:flex;gap:var(--gap);width:max-content;padding:0 22px}
+.gd-strip.run .gd-track{padding:0;animation:gd-run var(--dur,30s) linear infinite}
+.gd-strip.run:hover .gd-track,.gd-strip.run:focus-within .gd-track,.paused .gd-track{animation-play-state:paused}
+@keyframes gd-run{from{transform:translateX(0)}to{transform:translateX(calc(var(--set) * -1))}}
+.gd-tile{flex:0 0 var(--tw);width:var(--tw);aspect-ratio:4/3;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#1b1a18;cursor:zoom-in;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .35s var(--ease),filter .35s,border-color .35s}
+.gd-tile:hover,.gd-tile:focus-visible{transform:scale(1.05);filter:brightness(1.1);border-color:rgba(184,155,99,.6)}
+.gd-tile img{width:100%;height:100%;object-fit:cover;display:block}
+.gpager{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:22px}
+.gpager button{min-height:44px;min-width:44px;padding:0 14px;justify-self:auto}
+.gpager .pg-info{color:var(--muted);font-size:15px;width:100%;text-align:center;order:9}
+.gpager button:disabled{opacity:.35;cursor:default}
+@media(max-width:820px){.gd-strip{--tw:168px;--gap:10px}.gd-head,.gd-note{padding-left:16px;padding-right:16px}.gd-track{padding:0 16px}}
+@media(prefers-reduced-motion:reduce){.gd-strip{overflow-x:auto}.gd-strip.run{-webkit-mask:none;mask:none}.gd-tile{transition:none}}
 
 form{display:grid;gap:12px;margin-bottom:24px}
 label{color:var(--gold-soft);font-size:16px}
@@ -263,7 +281,6 @@ dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);ba
 .th .rm:hover{background:#7a2a22;transform:none;box-shadow:none}
 .linkadd{display:grid;grid-template-columns:1fr auto;gap:8px}
 .linkadd button{justify-self:stretch}
-.gallery figure{cursor:zoom-in}
 
 /* lightbox */
 #lb{width:min(1100px,96vw);max-height:94vh;background:transparent;border:0;box-shadow:none;overflow:visible;margin:auto}
@@ -356,8 +373,12 @@ dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);ba
   </section>
 
   <section id="gallery">
-    <h2 class="rv l">ภาพกิจกรรม</h2>
-    <div class="gallery" id="gal"><div class="empty" style="grid-column:1/-1">ยังไม่มีภาพกิจกรรม</div></div>
+    <div class="gal-top">
+      <h2 class="rv l">ภาพกิจกรรม</h2>
+      <button type="button" class="ghost sm" id="gpause" aria-pressed="false" hidden>⏸ หยุดเลื่อน</button>
+    </div>
+    <div class="gal-days" id="gal"><div class="empty">ยังไม่มีภาพกิจกรรม</div></div>
+    <nav class="gpager" id="gpager" aria-label="เลือกหน้าภาพกิจกรรม" hidden></nav>
   </section>
 
   <section id="comments">
@@ -681,20 +702,7 @@ function render(d) {
     setStat('s-last', last.count); $('s-last-d').textContent = 'วันที่ ' + thDate(last.date);
     putChart('bars', barChart(daily.slice(-14)));
     putChart('line', lineChart(daily));
-    const photos = daily.flatMap(r => splitPhotos(r.photo).map(u => ({ u, r })));
-    if (photos.length) {
-      galList = photos.slice(-24).reverse();
-      $('gal').replaceChildren(...galList.map((it, k) => {
-        const r = it.r, f = document.createElement('figure'), i = document.createElement('img'), c = document.createElement('figcaption');
-        f.className = 'rv z'; f.style.setProperty('--d', k % 4); f.tabIndex = 0; f.setAttribute('role', 'button');
-        const alt = r.note || 'ภาพกิจกรรมวันที่ ' + thDate(r.date); f.setAttribute('aria-label', 'ดูรูปขยาย: ' + alt);
-        i.src = photoUrl(it.u, 700); i.loading = 'lazy'; i.alt = alt;
-        c.textContent = (r.note ? r.note + ' · ' : '') + thDate(r.date);
-        f.onclick = () => openLb(k); f.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(k); } };
-        f.append(i, c); return f;
-      }));
-      watch($('gal'));
-    }
+    buildGal(daily);
   }
   $('clist').replaceChildren(...(d.comments || []).map(c => {
     const div = document.createElement('div'); div.className = 'cm';
@@ -705,6 +713,80 @@ function render(d) {
   firstRender = false;
   if (adm.open && adm.token) fillAdmin();
 }
+
+
+/* ---------- ภาพกิจกรรมรายวัน ---------- */
+const GAL_DAYS = 4;                    // แสดงได้ไม่เกิน 4 วันต่อหน้า
+let galPage = 0, galSig = '', galGroups = [];
+const thFull = s => { const d = new Date(s + 'T00:00:00'); return isNaN(d) ? s : d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+function buildGal(daily) {
+  const byDate = new Map();
+  daily.forEach(r => { const ps = splitPhotos(r.photo); if (ps.length) byDate.set(r.date, { r, ps }); });
+  galGroups = [...byDate.values()].sort((a, b) => b.r.date.localeCompare(a.r.date));
+  galList = []; galGroups.forEach(g => { g.start = galList.length; g.ps.forEach(u => galList.push({ u, r: g.r })); });
+  const sig = JSON.stringify(galGroups.map(g => [g.r.date, g.r.count, g.r.note, g.ps]));
+  if (sig === galSig) return;                 // ข้อมูลไม่เปลี่ยน ไม่ต้องวาดใหม่ (แถบจะไม่กระตุกทุก 60 วินาที)
+  galSig = sig; renderGal();
+}
+function galTile(g, i, clone) {
+  const t = document.createElement('div'), im = document.createElement('img'), k = g.start + i;
+  t.className = 'gd-tile'; im.src = photoUrl(g.ps[i], 520); im.loading = 'lazy'; im.decoding = 'async';
+  im.alt = clone ? '' : (g.r.note || 'ภาพกิจกรรมวันที่ ' + thDate(g.r.date)) + ' รูปที่ ' + (i + 1);
+  t.append(im); t.onclick = () => openLb(k);
+  if (clone) { t.setAttribute('aria-hidden', 'true'); }
+  else { t.tabIndex = 0; t.setAttribute('role', 'button'); t.setAttribute('aria-label', 'ดูรูปขยาย: ' + im.alt); t.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(k); } }; }
+  return t;
+}
+function renderGal() {
+  const box = $('gal'), pages = Math.max(1, Math.ceil(galGroups.length / GAL_DAYS));
+  galPage = Math.min(galPage, pages - 1);
+  if (!galGroups.length) { box.replaceChildren(Object.assign(document.createElement('div'), { className: 'empty', textContent: 'ยังไม่มีภาพกิจกรรม' })); $('gpager').hidden = true; $('gpause').hidden = true; return; }
+  box.replaceChildren(...galGroups.slice(galPage * GAL_DAYS, galPage * GAL_DAYS + GAL_DAYS).map((g, k) => {
+    const day = document.createElement('article'), head = document.createElement('div'), h = document.createElement('h3'), m = document.createElement('span');
+    day.className = 'gday rv'; day.style.setProperty('--d', k);
+    head.className = 'gd-head'; h.textContent = thFull(g.r.date);
+    m.className = 'gd-meta'; m.append('ทำได้ ', Object.assign(document.createElement('b'), { textContent: fmt(g.r.count) }), ' ดอก · ' + g.ps.length + ' รูป');
+    head.append(h, m); day.append(head);
+    if (g.r.note) day.append(Object.assign(document.createElement('p'), { className: 'gd-note', textContent: g.r.note }));
+    const strip = document.createElement('div'), track = document.createElement('div');
+    strip.className = 'gd-strip'; track.className = 'gd-track';
+    track.append(...g.ps.map((_, i) => galTile(g, i, false)));
+    strip.append(track); day.append(strip); day._g = g; return day;
+  }));
+  watch(box); fitStrips(); renderPager(pages);
+}
+/* เลื่อนวนอัตโนมัติเฉพาะแถวที่รูปยาวเกินความกว้างจอ (ถ้าน้อยกว่านั้นแสดงนิ่ง) */
+function fitStrips() {
+  let any = false;
+  document.querySelectorAll('#gal .gday').forEach(day => {
+    const strip = day.querySelector('.gd-strip'), track = strip.firstElementChild, g = day._g;
+    track.querySelectorAll('[aria-hidden]').forEach(n => n.remove());
+    strip.classList.remove('run');
+    const first = track.firstElementChild; if (!first) return;
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 0, n = g.ps.length;
+    const setW = n * (first.offsetWidth + gap);
+    if (!reduce && setW + 44 > strip.clientWidth) {
+      for (let c = 0; c < 2; c++) g.ps.forEach((_, i) => track.append(galTile(g, i, true)));   // ทำสำเนาให้วนต่อเนื่องไม่สะดุด
+      track.style.setProperty('--set', setW + 'px'); track.style.setProperty('--dur', Math.max(16, setW / 42).toFixed(1) + 's');
+      strip.classList.add('run'); any = true;
+    }
+  });
+  $('gpause').hidden = !any;
+}
+function renderPager(pages) {
+  const nav = $('gpager'); nav.hidden = pages < 2; if (pages < 2) return;
+  const mk = (txt, page, label, cur) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.setAttribute('aria-label', label); if (!cur) b.className = 'ghost sm'; else b.setAttribute('aria-current', 'page'); b.disabled = page < 0 || page >= pages; b.onclick = () => goGal(page); return b; };
+  const items = [mk('‹', galPage - 1, 'หน้าก่อนหน้า')];
+  for (let p = 0; p < pages; p++) items.push(mk(String(p + 1), p, 'หน้า ' + (p + 1), p === galPage));
+  items.push(mk('›', galPage + 1, 'หน้าถัดไป'));
+  const info = document.createElement('span'); info.className = 'pg-info';
+  const a = galPage * GAL_DAYS + 1, z = Math.min(galGroups.length, a + GAL_DAYS - 1);
+  info.textContent = 'แสดงวันที่ ' + a + '–' + z + ' จากทั้งหมด ' + galGroups.length + ' วัน'; items.push(info);
+  nav.replaceChildren(...items);
+}
+function goGal(p) { galPage = p; renderGal(); $('gallery').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+$('gpause').onclick = e => { const on = $('gallery').classList.toggle('paused'); e.currentTarget.setAttribute('aria-pressed', on); e.currentTarget.textContent = on ? '▶ เลื่อนต่อ' : '⏸ หยุดเลื่อน'; };
+let galRz; addEventListener('resize', () => { clearTimeout(galRz); galRz = setTimeout(fitStrips, 150); });
 
 /* ---------- boot ---------- */
 setOdo(null, true); buildMs(); setDeadlineText(); tickCd(); setInterval(tickCd, 1000);
