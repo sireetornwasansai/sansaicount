@@ -31,7 +31,7 @@ body{font-family:'Sarabun',sans-serif;font-size:17px;line-height:1.7;color:var(-
 #bgv{position:fixed;left:-6%;top:-6%;width:112%;height:112%;object-fit:cover;z-index:-2;pointer-events:none;opacity:.34;filter:blur(24px) brightness(.85) saturate(.9);
   transform:translate3d(0,var(--vy,0),0) scale(1.04);will-change:transform;animation:vin 2.4s ease both}
 @keyframes vin{from{opacity:0}}
-#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:40;pointer-events:none;display:block;opacity:.85} /* ชั้นละอองฟุ้งลอยทับเนื้อหาทั้งหน้า (คลิกทะลุได้) */
 main,footer,.goalbar{position:relative}
 
 /* ---------- ส่วนหัวแบบติดบน + แถบความคืบหน้าการเลื่อน ---------- */
@@ -335,7 +335,9 @@ dialog::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(5px);ba
             <div><label for="a-count">จำนวนที่ประดิษฐ์ (ดอก)</label><input id="a-count" type="number" min="0" max="10000000" step="1" inputmode="numeric" required></div>
           </div>
           <label for="a-note">หมายเหตุ (ไม่บังคับ)</label><input id="a-note" maxlength="200">
-          <label for="a-photo">ลิงก์ภาพกิจกรรม (ไม่บังคับ)</label><input id="a-photo" type="url" placeholder="https://drive.google.com/…">
+          <label for="a-file">รูปกิจกรรม (ไม่บังคับ) — อัปโหลดขึ้นไดรฟ์ของโรงพยาบาลอัตโนมัติ</label><input id="a-file" type="file" accept="image/jpeg,image/png,image/webp">
+          <p class="msg" id="m-file" role="status"></p>
+          <label for="a-photo">ลิงก์ภาพ (กรอกเอง หรือได้จากการอัปโหลดด้านบน)</label><input id="a-photo" type="url" placeholder="https://drive.google.com/…">
           <button type="submit" id="b-daily">บันทึก</button>
           <p class="msg" id="m-daily" role="status"></p>
         </form>
@@ -701,7 +703,7 @@ const adm = $('adm');
 adm.token = safe(() => sessionStorage.getItem('adm_tok')) || '';
 const todayTH = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' });
 const say = (id, text, kind) => { const m = $(id); m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); };
-const ERR = { wrong_password: 'รหัสผ่านไม่ถูกต้อง', locked: 'กรอกผิดหลายครั้ง ระบบล็อกชั่วคราว กรุณารอประมาณ 10 นาที', unauthorized: 'หมดเวลาการเข้าสู่ระบบ กรุณาเข้าสู่ระบบอีกครั้ง', bad_date: 'วันที่ไม่ถูกต้อง', bad_count: 'จำนวนไม่ถูกต้อง', bad_photo: 'ลิงก์ภาพต้องขึ้นต้นด้วย http:// หรือ https://', bad_target: 'เป้าหมายไม่ถูกต้อง', bad_deadline: 'กำหนดเวลาไม่ถูกต้อง', bad_total: 'ยอดรวมไม่ถูกต้อง', stale: 'ข้อมูลเปลี่ยนไปแล้ว กรุณารีเฟรชรายการ' };
+const ERR = { wrong_password: 'รหัสผ่านไม่ถูกต้อง', locked: 'กรอกผิดหลายครั้ง ระบบล็อกชั่วคราว กรุณารอประมาณ 10 นาที', unauthorized: 'หมดเวลาการเข้าสู่ระบบ กรุณาเข้าสู่ระบบอีกครั้ง', bad_date: 'วันที่ไม่ถูกต้อง', bad_count: 'จำนวนไม่ถูกต้อง', bad_photo: 'ลิงก์ภาพต้องขึ้นต้นด้วย http:// หรือ https://', bad_target: 'เป้าหมายไม่ถูกต้อง', bad_deadline: 'กำหนดเวลาไม่ถูกต้อง', bad_total: 'ยอดรวมไม่ถูกต้อง', bad_image: 'รองรับเฉพาะไฟล์ JPG, PNG, WebP', image_too_big: 'ไฟล์ใหญ่เกินไป', stale: 'ข้อมูลเปลี่ยนไปแล้ว กรุณารีเฟรชรายการ' };
 async function api(action, payload = {}) {
   if (!API_URL) return { ok: false, error: 'ยังไม่ได้ตั้งค่า API_URL' };
   try {
@@ -781,6 +783,31 @@ function fillAdmin() {
   tbl.append(tb); box.replaceChildren(tbl);
 }
 
+/* อัปโหลดรูป: ย่อเป็น JPEG ไม่เกิน 1600px ก่อนส่ง แล้วใส่ลิงก์ที่ได้ลงช่อง */
+function shrink(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', .82).split(',')[1]);
+    };
+    img.onerror = () => rej(new Error('อ่านรูปไม่ได้')); img.src = url;
+  });
+}
+$('a-file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  say('m-file', 'กำลังอัปโหลดรูป…'); $('b-daily').disabled = true;
+  try {
+    const data = await shrink(f);
+    const j = await api('upload_photo', { mime: 'image/jpeg', data });
+    if (!j.ok) say('m-file', errText(j), 'err');
+    else { $('a-photo').value = j.url; say('m-file', 'อัปโหลดรูปแล้ว', 'ok'); }
+  } catch (x) { say('m-file', x.message || 'อัปโหลดไม่สำเร็จ', 'err'); }
+  $('b-daily').disabled = false; e.target.value = '';
+});
+
 $('f-daily').addEventListener('submit', async e => {
   e.preventDefault();
   const b = $('b-daily'); b.disabled = true; say('m-daily', 'กำลังบันทึก…');
@@ -788,7 +815,7 @@ $('f-daily').addEventListener('submit', async e => {
   b.disabled = false;
   if (!j.ok) return say('m-daily', errText(j), 'err');
   say('m-daily', j.mode === 'updated' ? 'แก้ไขข้อมูลวันที่นี้แล้ว' : 'บันทึกแล้ว', 'ok');
-  $('a-count').value = ''; $('a-note').value = ''; $('a-photo').value = '';
+  $('a-count').value = ''; $('a-note').value = ''; $('a-photo').value = ''; say('m-file', '');
   await load();
   document.getElementById('stage').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); adm.close();
 });
